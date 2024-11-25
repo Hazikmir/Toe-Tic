@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en"> 
+ <head> 
+  <meta charset="UTF-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>Tic Tac Toe</title> 
+  <link rel="stylesheet" href="styles.css"> 
+ <style type="text/css" id="dcoder_stylesheet">body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(blue, black);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.hidden {
+    display: none;
+}
+
+#loading-screen {
+    text-align: center;
+}
+
+#menu-screen, #game-screen {
+    text-align: center;
+}
+
+button {
+    margin: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: grey;
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: white;
+    color: black;
+}
+
+#game-board {
+    display: grid;
+    grid-template-columns: repeat(3, 100px);
+    grid-template-rows: repeat(3, 100px);
+    gap: 5px;
+    justify-content: center;
+    margin: 20px auto;
+}
+
+.cell {
+    background-color: lightgrey;
+    font-size: 36px;
+    text-align: center;
+    line-height: 100px;
+    cursor: pointer;
+    color: white;
+    border-radius: 5px;
+}
+
+.cell.taken {
+    cursor: not-allowed;
+}</style></head> 
+ <body> 
+  <div id="loading-screen"> 
+   <h1>Made by Hazik Studio</h1> 
+  </div> 
+  <div id="menu-screen" class="hidden"> 
+   <h1>Tic Tac Toe</h1> <button onclick="startGame('friend')">Play With a Friend</button> <button onclick="startGame('bot')">Play With a Bot</button> 
+  </div> 
+  <div id="game-screen" class="hidden"> 
+   <div id="game-board"></div> <button onclick="goToMenu()">Back to Menu</button> 
+  </div> 
+  <script src="script.js"></script> 
+ 
+<script type="text/javascript" id="dcoder_script">let board = ["", "", "", "", "", "", "", "", ""];
+let currentPlayer = "X";
+let isPlayingWithBot = false;
+let isPlayerTurn = true; // Track if it's the player's turn
+
+window.onload = () => {
+    setTimeout(() => {
+        document.getElementById("loading-screen").classList.add("hidden");
+        document.getElementById("menu-screen").classList.remove("hidden");
+    }, 5000);
+};
+
+function startGame(mode) {
+    isPlayingWithBot = mode === "bot";
+    resetBoard();
+    document.getElementById("menu-screen").classList.add("hidden");
+    document.getElementById("game-screen").classList.remove("hidden");
+    renderBoard();
+}
+
+function goToMenu() {
+    document.getElementById("game-screen").classList.add("hidden");
+    document.getElementById("menu-screen").classList.remove("hidden");
+}
+
+function resetBoard() {
+    board = ["", "", "", "", "", "", "", "", ""];
+    currentPlayer = "X";
+    isPlayerTurn = true;
+}
+
+function renderBoard() {
+    const gameBoard = document.getElementById("game-board");
+    gameBoard.innerHTML = "";
+    board.forEach((cell, index) => {
+        const cellElement = document.createElement("div");
+        cellElement.classList.add("cell");
+        cellElement.textContent = cell;
+        if (cell === "" && isPlayerTurn) {
+            cellElement.onclick = () => makeMove(index);
+        } else {
+            cellElement.onclick = null; // Disable click for taken cells or during bot's turn
+        }
+        gameBoard.appendChild(cellElement);
+    });
+}
+
+function makeMove(index) {
+    if (!isPlayerTurn || board[index] || checkWinner()) return;
+
+    board[index] = currentPlayer;
+    renderBoard();
+
+    if (checkWinner()) {
+        setTimeout(() => alert(`${currentPlayer} wins!`), 100);
+        return;
+    }
+
+    if (board.every(cell => cell)) {
+        setTimeout(() => alert("It's a draw!"), 100);
+        return;
+    }
+
+    currentPlayer = currentPlayer === "X" ? "O" : "X";
+
+    if (isPlayingWithBot && currentPlayer === "O") {
+        isPlayerTurn = false;
+        setTimeout(botMove, 3000); // Delay bot's move
+    }
+}
+
+function botMove() {
+    let bestMove = findBestMove();
+    board[bestMove] = currentPlayer;
+    renderBoard();
+
+    if (checkWinner()) {
+        setTimeout(() => alert(`${currentPlayer} wins!`), 100);
+        return;
+    }
+
+    if (board.every(cell => cell)) {
+        setTimeout(() => alert("It's a draw!"), 100);
+        return;
+    }
+
+    currentPlayer = currentPlayer === "X" ? "O" : "X";
+    isPlayerTurn = true;
+    renderBoard(); // Re-enable the board for the player
+}
+
+function findBestMove() {
+    // Winning combinations
+    const winningCombinations = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+        [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+        [0, 4, 8], [2, 4, 6]             // Diagonals
+    ];
+
+    // Check for a winning move
+    for (let combo of winningCombinations) {
+        const [a, b, c] = combo;
+        if (board[a] === currentPlayer && board[b] === currentPlayer && board[c] === "") return c;
+        if (board[a] === currentPlayer && board[c] === currentPlayer && board[b] === "") return b;
+        if (board[b] === currentPlayer && board[c] === currentPlayer && board[a] === "") return a;
+    }
+
+    // Check for a blocking move
+    const opponent = currentPlayer === "X" ? "O" : "X";
+    for (let combo of winningCombinations) {
+        const [a, b, c] = combo;
+        if (board[a] === opponent && board[b] === opponent && board[c] === "") return c;
+        if (board[a] === opponent && board[c] === opponent && board[b] === "") return b;
+        if (board[b] === opponent && board[c] === opponent && board[a] === "") return a;
+    }
+
+    // Pick a random empty cell
+    const emptyCells = board.map((cell, index) => (cell === "" ? index : null)).filter(index => index !== null);
+    return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+}
+
+function checkWinner() {
+    const winningCombinations = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+        [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+        [0, 4, 8], [2, 4, 6]             // Diagonals
+    ];
+
+    return winningCombinations.some(combo => {
+        const [a, b, c] = combo;
+        return board[a] && board[a] === board[b] && board[a] === board[c];
+    });
+}</script></body></html>
